@@ -10,6 +10,14 @@ incident.
 
 ## THE LADDER OF DEGRADATION
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/defence-in-depth-dark.svg">
+  <img src="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/defence-in-depth-light.svg" alt="Four independent moderation layers and what survives when each fails. Layer one, primary classifier: language-model judgement on message content; on failure a configured fallback model takes over. Layer two, vision classifier with its own fallback; on failure image coverage degrades while text coverage is unaffected. Layer three, deterministic backstop: rules-based enforcement requiring no AI, so only a total system failure removes it. Layer four, outage retry queue: re-processes messages missed while classifiers were down. No thresholds or confidence values shown." width="100%">
+</picture>
+
+*The table below is the accessible equivalent of this figure, not a caption for it.*
+
+
 | Failure | What still works | What is lost |
 | :--- | :--- | :--- |
 | Primary model unavailable | fallback model classifies | some accuracy |
