@@ -1,0 +1,61 @@
+# AXIOM — configuration SHAPE
+#
+# Binding NAMES are the useful part of a specification and are published here.
+# Every IDENTIFIER is a placeholder. A wrangler.toml with real ids is a
+# reconnaissance document even when it contains no secrets.
+#
+# Copy to wrangler.toml and supply your own values.
+
+name = "axiom"
+main = "src/worker.js"
+compatibility_date = "<YYYY-MM-DD>"
+account_id = "<CF_ACCOUNT_ID>"
+
+# ── Scheduled work ───────────────────────────────────────────────────────────
+# Cadence intentionally omitted. An adversary who knows when a sweep runs knows
+# when coverage is thinnest. Choose your own interval.
+[triggers]
+crons = ["<YOUR_CRON_EXPRESSION>"]
+
+# ── Inference ────────────────────────────────────────────────────────────────
+[ai]
+binding = "AI"
+
+# ── Databases ────────────────────────────────────────────────────────────────
+# NOTE: both databases may contain a table of the same name with different
+# schemas. See docs/ARCHITECTURE.md — querying the wrong one returns success
+# with an empty result, which is indistinguishable from "nothing ever happened".
+
+[[d1_databases]]
+binding       = "BOT_DB"           # guild-local state
+database_name = "<BOT_DB_NAME>"
+database_id   = "<D1_DATABASE_ID>"
+
+[[d1_databases]]
+binding       = "VM_DB"            # the moderation record
+database_name = "<VM_DB_NAME>"
+database_id   = "<D1_DATABASE_ID>"
+
+# ── Sessions ─────────────────────────────────────────────────────────────────
+[[kv_namespaces]]
+binding = "SESSIONS"
+id      = "<KV_NAMESPACE_ID>"
+
+# ── Secrets ──────────────────────────────────────────────────────────────────
+# Set with `wrangler secret put NAME`. Never commit values.
+#
+#   DISCORD_TOKEN          bot token
+#   DISCORD_APP_ID         application id
+#   DISCORD_PUBLIC_KEY     interaction signature verification
+#   AXIOM_SECRET           internal request authentication
+#   SCANNER_KEY            companion scanner authentication
+#   OWNER_ID               owner tier identity
+#   ALERT_CHAT_ID          out-of-band operator alerting
+#   ALERT_BOT_TOKEN        out-of-band operator alerting
+#
+# Additional deployment-specific secrets are omitted: a secret NAME paired with
+# its purpose discloses what a system integrates with.
+
+# ── Configuration ────────────────────────────────────────────────────────────
+# Runtime moderation behaviour is configured in the database, not here, so it is
+# tunable without a redeploy. See docs/CONFIGURATION.md for the key surface.
