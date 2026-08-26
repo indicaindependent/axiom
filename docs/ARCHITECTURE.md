@@ -3,6 +3,14 @@
 ## COMPONENTS
 Axiom is three cooperating pieces, deliberately split across two failure domains.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/components-dark.svg">
+  <img src="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/components-light.svg" alt="Components and failure domains: the Discord gateway websocket feeds a gateway listener, a resident process on operator-controlled hardware forming failure domain A, which feeds a Cloudflare Worker forming failure domain B. The worker handles interaction handling, classification, enforcement and a scheduled sweep, and writes to two D1 databases, BOT_DB holding guild-local state and VM_DB holding the moderation record. The two domains fail independently." width="100%">
+</picture>
+
+<details>
+<summary>Same diagram as plain text</summary>
+
 ```
   Discord Gateway (websocket, persistent session)
             |
@@ -22,6 +30,8 @@ Axiom is three cooperating pieces, deliberately split across two failure domains
    | BOT_DB  |  |  VM_DB  |     two D1 databases, different lifecycles
    +---------+  +---------+
 ```
+
+</details>
 
 ### Why the listener is not in the worker
 A Cloudflare Worker cannot hold a long-lived websocket across cold starts. Discord's
