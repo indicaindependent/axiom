@@ -1,5 +1,10 @@
 # AXIOM
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/defence-in-depth-dark.svg">
+  <img src="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/defence-in-depth-light.svg" alt="Four independent layers. Layer one, primary classifier: language-model judgement on message content; on failure a configured fallback model takes over. Layer two, vision classifier: image moderation with its own fallback; on failure image coverage degrades while text coverage is unaffected. Layer three, deterministic backstop: rules-based enforcement requiring no AI at all, so only a total system failure removes it. Layer four, outage retry queue: re-processes messages missed while classifiers were down, so gaps persist only until the next successful sweep." width="100%">
+</picture>
+
 ### Autonomous Discord security and channel moderation, built on the assumption that its own AI will fail
 Axiom reads a live Discord gateway, classifies what it sees, and acts — warning,
 timing out, escalating or staying silent. That part is unremarkable; plenty of bots
