@@ -11,6 +11,11 @@ incident.
 ## THE LADDER OF DEGRADATION
 
 <picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/degradation-ladder-dark.svg">
+  <img src="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/degradation-ladder-light.svg" alt="Ladder of degradation: primary model unavailable, fallback model classifies, losing some accuracy. Both models unavailable, deterministic backstop, losing nuance while unambiguous cases are still caught. Total inference outage, evaluation queues for retry, losing immediacy but not coverage. Worker unavailable, gateway session persists, losing interaction handling until it returns. Gateway disconnect, worker still serves interactions, losing live evaluation until the session resumes. Both unavailable, evidence and ladders intact in the database, losing live moderation until restored." width="100%">
+</picture>
+
+<picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/defence-in-depth-dark.svg">
   <img src="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/defence-in-depth-light.svg" alt="Four independent moderation layers and what survives when each fails. Layer one, primary classifier: language-model judgement on message content; on failure a configured fallback model takes over. Layer two, vision classifier with its own fallback; on failure image coverage degrades while text coverage is unaffected. Layer three, deterministic backstop: rules-based enforcement requiring no AI, so only a total system failure removes it. Layer four, outage retry queue: re-processes messages missed while classifiers were down. No thresholds or confidence values shown." width="100%">
 </picture>
