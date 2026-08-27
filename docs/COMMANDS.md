@@ -53,3 +53,4 @@ that they are doing so. A member receiving a correction is not publicly marked.
 according to current authority, not authority at deploy time.
 **Every enforcement command writes evidence** — including who invoked it. Human
 actions are as auditable as automated ones. See [PRIVACY](PRIVACY.md) for retention.
+

@@ -1,71 +1,113 @@
 # FALSE POSITIVES
 
-### The design document most worth reading
-Most people who dislike moderation bots do not dislike moderation. They dislike
-being flagged for a word.
+### The design document that matters most
+A moderation system is judged by the community it moderates, and communities do not
+resent enforcement. They resent being flagged for a word.
 
-## THE PROBLEM WITH SINGLE-SIGNAL MATCHING
-A naive filter escalates when it sees a signal. Mentions a payment app? Flag.
-Contains a link? Flag. Mentions a price? Flag.
-In a technical community that is catastrophic, because **the vocabulary of
-solicitation is also the vocabulary of ordinary shop talk**:
-
-> "the API costs about the same as hosting it yourself"
-> "we moved off WhatsApp for support, the webhooks were unreliable"
-> "Telegram's bot API is nicer than Discord's for this"
-> "that provider charges per seat, which killed it for us"
-Every one of those trips a keyword filter. Every one is exactly the conversation the
-community exists to have. A system that punishes them does not make the room safer;
-it makes the room quieter, and it teaches members that the bot is an obstacle.
-
-## THE REPLACEMENT: CONJUNCTION GATING
-Axiom's escalation rules require **co-occurrence**, not presence.
-A contact-channel mention is not evidence of solicitation. A contact-channel
-mention **together with** selling intent or an outbound link is. Expressed as
-structure rather than values:
-
-```
-escalate  <-  funnel_signal  AND  (link OR promotional_intent OR earnings_framing)
-escalate  <-  earnings_hook  AND  (funnel OR promotional_intent OR invite_behaviour)
-```
-The single signal, alone, does nothing.
-This is why someone can say "we pay for the API" without consequence, while
-"DM me on Telegram, I'll show you the API that made me money" resolves immediately.
-Same vocabulary. Different structure. **The structure is the signal.**
-
-## RATE AND STRUCTURE ARE LOAD-BEARING; PHRASING IS CORROBORATION
-A parallel rule applies to behavioural detection. Volume and burst are primary
-evidence. Wording is supporting evidence only, never sufficient on its own.
-The reason is concrete: a phrase common among spammers is also used by ordinary
-members, so a phrasing gate alone flags real people. Any detection design that can
-be defeated or triggered by word choice is measuring vocabulary and calling it
-intent.
-
-## SUBSTRING MATCHING IS A FALSE-POSITIVE GENERATOR
-
-A specific, recurring implementation trap, documented because it is easy to
-reintroduce.
-Matching a fragment inside a longer word produces confident nonsense. A term of art
-can contain a flagged sequence entirely by accident, and the match will look like a
-real hit in a log. Pattern boundaries must be anchored, and any pattern list needs
-testing against ordinary domain vocabulary — not only against known-bad examples.
-**Testing a detector only on things it should catch measures nothing.** The
-informative test set is the legitimate traffic it must leave alone.
-
-## THE ASYMMETRY THAT DRIVES ALL OF THIS
+## THE ASYMMETRY THAT DRIVES EVERY DECISION HERE
 
 | Error | Who notices | Cost |
 | :--- | :--- | :--- |
-| False negative | moderators, later | one message survives longer than it should |
-| False positive | the member, immediately, in public | trust in the system, and their willingness to post |
+| Missed violation | moderators, later | one message survives longer than it should |
+| Wrong flag | the member, immediately | trust in the system, and their willingness to post |
 A missed violation is a delay. A wrong flag is a relationship.
-That asymmetry is why corrections are **ephemeral by default** — a private nudge, so
-that being wrong costs the member nothing publicly — and why borderline promotional
-cases are **redirected rather than punished**.
+Every guard below exists because that asymmetry was taken seriously rather than
+assumed away.
+
+## WHY SINGLE-SIGNAL MATCHING CANNOT WORK
+A naive filter escalates on presence. Mentions a payment app, flag. Contains a link,
+flag. Mentions a price, flag.
+In a technical community that is catastrophic, because the vocabulary of solicitation
+is also the vocabulary of ordinary shop talk:
+
+> "the API costs about the same as hosting it yourself"
+> "we moved off WhatsApp for support, the webhooks were unreliable"
+> "that provider charges per seat, which killed it for us"
+Every one trips a keyword filter. Every one is the conversation the community exists
+to have. A system that punishes them does not make the room safer — it makes the room
+quieter, and teaches members that the bot is an obstacle to be routed around.
+
+## THE REPLACEMENT: CONJUNCTION GATING
+Escalation requires **co-occurrence**, not presence:
+
+```
+escalate  <-  funnel_signal   AND  (link OR promotional_intent OR earnings_framing)
+escalate  <-  earnings_hook   AND  (funnel OR promotional_intent OR invite_behaviour)
+```
+A single signal, alone, does nothing.
+So "we pay for the API" passes without friction, while "DM me on Telegram, I'll show
+you the API that made me money" resolves immediately. Same vocabulary. Different
+structure. **The structure is the signal.**
+
+## THE GUARD SUITE
+Each of these is a named, separately-reasoned component. They are listed by what they
+protect rather than how they work.
+
+### Technical-context guard
+Security work has a vocabulary that overlaps heavily with content policy: exploit,
+penetration, payload, injection. A community that discusses application security
+cannot function under a filter that reads those words literally. This guard
+establishes technical context before any content judgement is allowed to stand.
+
+### Reported-speech guard
+**The most important guard in the system.** A member quoting abuse in order to report
+it is not committing abuse. Neither is a moderator discussing a case, or someone
+describing what was said to them.
+A classifier reading only the text sees the abusive string and flags it. The effect of
+getting this wrong is severe and self-reinforcing: **it punishes the person raising the
+alarm**, which teaches a community to stop reporting. Most human moderation teams get
+this wrong at least once.
+
+### Hiring and collaboration guard
+"Looking for a backend dev for a paid project" carries commercial intent, a rate, and
+often a contact channel — a perfect score on every solicitation signal, and entirely
+legitimate in a builder community. Recruitment is distinguished from advertising as a
+first-class category rather than surviving on a lucky threshold.
+
+### Free-software guard
+Sharing something free is the opposite of solicitation, yet it looks identical to a
+signal counter: a link, a project name, enthusiasm. Absence of a commercial hook is
+treated as evidence, not as a missing feature.
+
+### Exemption gate
+Some accounts and contexts are legitimately permitted to promote. Exemptions are
+explicit and checked, rather than being emergent from thresholds.
+
+### Deterministic guards
+An entire non-AI layer dedicated to false-positive suppression, so that during a model
+outage the system does not become *more* punitive as it becomes less capable. That
+inversion is a common failure in layered designs and it is guarded against directly.
+
+## GRADUATED RESPONSE, NOT A BINARY
+Two further mechanisms exist purely to make being wrong cheap:
+**First-flag confidence floor.** A member's *first* flag requires **higher** confidence
+than a subsequent one. The reasoning is proportionality — a first encounter with the
+system sets a member's expectation of it forever, and a wrong first flag costs more
+than a wrong second.
+**Low-confidence, minor-severity nudge.** Where certainty is low and severity is
+minor, the outcome is a private nudge. No strike, no public mark, no record of
+punishment. The member simply learns the norm.
+Combined with **ephemeral-first delivery** — corrections are private by default — the
+cost of a wrong call falls close to zero, which is the only honest way to run a
+detector that will sometimes be wrong.
+
+## OFF-TOPIC IS NOT A VIOLATION
+Stated explicitly in the design. Being in the wrong channel is a routing problem, and
+the correct response is a redirect. Treating misplacement as misconduct is how
+moderation systems acquire a reputation for pettiness.
+
+## A RECURRING IMPLEMENTATION TRAP
+Matching a fragment inside a longer word produces confident nonsense — a term of art
+can contain a flagged sequence entirely by accident, and the match looks like a real
+hit in a log. Pattern boundaries must be anchored, and every pattern list needs testing
+against ordinary domain vocabulary.
+**Testing a detector only against things it should catch measures nothing.** The
+informative test set is the legitimate traffic it must leave alone.
 
 ## WHAT THIS DOES NOT SOLVE
-Conjunction gating raises the cost of evasion. It does not eliminate it. An
-adversary who understands the structure can construct a message that satisfies no
-conjunction — which is precisely why the numeric calibration behind these rules is
-not published, and why the deterministic backstop's patterns are not enumerated
-anywhere in this repository.
+Conjunction gating and the guard suite raise the cost of evasion. They do not eliminate
+it. An adversary who understands the structure can construct a message satisfying no
+conjunction.
+That is precisely why the calibration behind these rules — the thresholds, the floors,
+the guard patterns — appears nowhere in this repository.
+

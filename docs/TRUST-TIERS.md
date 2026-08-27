@@ -10,7 +10,6 @@ cached.
 | **Co-admin** | a designated second administrator | explicit identity |
 | **Moderator** | anyone holding real moderation permissions | **derived from Discord permission bits** |
 | **Member** | everyone else | default |
-
 The moderator tier is the design decision worth noting. It is **not** a hardcoded
 list and **not** a role name. It is computed from the caller's actual Discord
 permission bitfield — kick, ban and manage-guild.
@@ -40,7 +39,7 @@ identity is checked before anything derived, so an operator cannot be locked out
 their own instance by a permission change in Discord.
 
 ## WHAT IS NOT PUBLISHED
-
 Owner and co-admin identifiers, the permission bit values used, and the specific
 per-tier evaluation differences are omitted. The model is documented; the
 calibration is not. See the note at the end of [CLASSIFICATION](CLASSIFICATION.md).
+

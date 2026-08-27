@@ -1,86 +1,111 @@
 # AXIOM
 
+> [!NOTE]
+> This repository publishes the **architecture** of a system running in production. It is a
+> specification, not a deployable copy. The calibration is deliberately withheld — no
+> thresholds, confidence cut-offs, guard patterns, classifier prompts or schedules — because
+> documentation of a detector is a manual for evading it. Identifiers are placeholdered.
+
+
+### Autonomous Discord security and channel moderation
+Axiom reads a live Discord gateway, classifies what it sees across text and images,
+and acts. Plenty of bots do that.
+Two things separate this one, and neither is the classifier.
+
+---
+
+## 1. IT IS BUILT NOT TO PUNISH THE INNOCENT
+Most people who dislike moderation bots do not dislike moderation. They dislike being
+flagged for a word.
+In a technical community that failure is near-guaranteed, because the vocabulary of
+solicitation is also the vocabulary of ordinary shop talk. "The API costs about the
+same as hosting it" is not an advertisement. "We moved off WhatsApp for support" is not
+a funnel. A keyword filter cannot tell the difference, so it punishes the conversation
+the community exists to have.
+Axiom carries a suite of named, individually-engineered guards whose only purpose is
+declining to act:
+
+| Guard | What it protects |
+| :--- | :--- |
+| **Technical-context guard** | security and pentest vocabulary is not adult content |
+| **Reported-speech guard** | quoting abuse in order to report it is not abuse |
+| **Hiring guard** | a job post is not an advertisement |
+| **Free-software guard** | sharing something free is not promotion |
+| **Exemption gate** | declared exemptions are honoured |
+| **Deterministic guards** | a whole non-AI layer dedicated to this alone |
+| **First-flag confidence floor** | a first offence requires *higher* confidence than a repeat |
+| **Low-confidence nudge** | uncertainty produces a private nudge, never a punishment |
+Escalation requires **co-occurrence**, never presence. A contact-channel mention alone
+does nothing; a contact-channel mention *together with* selling intent resolves
+immediately. Same vocabulary, different structure — and the structure is the signal.
+The reported-speech distinction is one that human moderation teams routinely get
+wrong. See [FALSE-POSITIVES](docs/FALSE-POSITIVES.md).
+
+## 2. IT ASSUMES ITS OWN AI WILL FAIL
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/defence-in-depth-dark.svg">
-  <img src="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/defence-in-depth-light.svg" alt="Four independent layers. Layer one, primary classifier: language-model judgement on message content; on failure a configured fallback model takes over. Layer two, vision classifier: image moderation with its own fallback; on failure image coverage degrades while text coverage is unaffected. Layer three, deterministic backstop: rules-based enforcement requiring no AI at all, so only a total system failure removes it. Layer four, outage retry queue: re-processes messages missed while classifiers were down, so gaps persist only until the next successful sweep." width="100%">
+  <img src="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/defence-in-depth-light.svg" alt="Four independent layers. Primary classifier with a configured fallback. Vision classifier with its own fallback, so image failure does not affect text coverage. Deterministic backstop requiring no AI at all. Outage retry queue that re-processes anything missed while classifiers were down." width="100%">
 </picture>
 
-### Autonomous Discord security and channel moderation, built on the assumption that its own AI will fail
-Axiom reads a live Discord gateway, classifies what it sees, and acts — warning,
-timing out, escalating or staying silent. That part is unremarkable; plenty of bots
-classify messages.
-What makes Axiom different is the **four independent layers underneath the
-classifier**, each able to carry the system when the one above it stops working.
+
+| | Layer | Survives |
+| :--- | :--- | :--- |
+| **1** | model ensemble — several text models, two independent vision models | normal operation |
+| **2** | configurable fallback models | a primary being unavailable |
+| **3** | deterministic backstop, **no AI at all** | total inference outage |
+| **4** | retry queue on separate hardware | gaps left while the above were down |
+Layer 3 means coverage *degrades* instead of disappearing. Layer 4 exists because a
+worker-side retry cannot run when the worker is the thing that is broken.
+Both were built in response to measured failures, and both failures are published in
+full in [FAILURE-MODES](docs/FAILURE-MODES.md) — including the outage that left ten
+messages permanently unjudged, and the health check that made a dead process invisible
+for 112 restarts. Those two documents are the ones worth your time.
 
 ---
 
-## THE FOUR LAYERS
+## COMPONENTS
 
-| | Layer | What it does | What it survives |
-| :--- | :--- | :--- | :--- |
-| **1** | Primary classifier | Workers AI model, confidence-scored, category-tagged | normal operation |
-| **2** | Fallback classifier | a second configurable model | the primary model being unavailable |
-| **3** | Deterministic backstop | rules-based, **no AI involved at all** | total inference outage |
-| **4** | Retry queue | out-of-band sweep on separate hardware | gaps left while the above were down |
-Layer 3 is the unusual one: when every model is unreachable, coverage **degrades**
-instead of disappearing. Layer 4 is rarer still — it runs outside the worker, on a
-different machine, and its only job is to close the holes an outage left behind.
+```
+moderation engine    resident Discord gateway + scheduled worker + two databases
+research gateway     authenticated per-consumer research API over a corpus store
+security scanner     read-only web-security audit, invoked from chat
+```
+The gateway listener runs as a resident process on operator hardware, because a Worker
+cannot hold a resumable websocket across cold starts. Its own description of itself:
 
-> A moderation system that assumes its classifier always answers is a moderation
-> system with a single point of failure it has not noticed.
-
----
-
-## WHAT IT ACTUALLY DOES
-
-- **Text classification** with confidence scores and named categories
-- **Image classification** through a separate vision model, with its own fallback
-- **Graduated verdicts** rather than allow/deny — see [CLASSIFICATION](docs/CLASSIFICATION.md)
-- **Conjunction-gated signals** so legitimate conversation is not punished for
-  vocabulary — see [FALSE-POSITIVES](docs/FALSE-POSITIVES.md), which is the design
-  document most worth reading
-- **Raid detection** on join behaviour and account age
-- **Spam windowing** with configurable limits
-- **Two separate strike ladders**, so a promotional infraction does not accumulate
-  against a harassment record
-- **Evidence retention**, so any action can be audited after the fact
-- **Ephemeral-first correction** — the default is a private nudge, not public shaming
-- **Trust tiers** derived from real Discord permission bits
-- **Weekly security brief**
-
----
+> The brain does all judgment; this feeder is dumb plumbing. Auto-reconnect, resume,
+> backoff. **Never acts, never stores.**
 
 ## DOCUMENTATION
 
-| Document | What it covers |
+| | Document |
 | :--- | :--- |
-| [ARCHITECTURE](docs/ARCHITECTURE.md) | components, data flow, the two-database split |
-| [THREAT-MODEL](docs/THREAT-MODEL.md) | what it defends against, and what it deliberately does not |
-| [CLASSIFICATION](docs/CLASSIFICATION.md) | the verdict taxonomy and the borderline rule |
-| [FALSE-POSITIVES](docs/FALSE-POSITIVES.md) | why single-signal matching fails, and what replaces it |
-| [FAILURE-MODES](docs/FAILURE-MODES.md) | what happens when each layer breaks |
-| [TRUST-TIERS](docs/TRUST-TIERS.md) | who can invoke what |
-| [COMMANDS](docs/COMMANDS.md) | the command surface, by required tier |
-| [CONFIGURATION](docs/CONFIGURATION.md) | operator-tunable behaviour |
-| [GOVERNANCE](docs/GOVERNANCE.md) | how moderation policy changes are recorded |
-| [PRIVACY](docs/PRIVACY.md) | what is retained, for how long, and who can read it |
+|  | [FALSE-POSITIVES](docs/FALSE-POSITIVES.md) — the guard suite, and why single-signal matching fails |
+|  | [FAILURE-MODES](docs/FAILURE-MODES.md) — two real failures, published in full |
+| | [ARCHITECTURE](docs/ARCHITECTURE.md) — components, data flow, the two-database split |
+| | [PIPELINE](docs/PIPELINE.md) — harvest, judge, evidence, act — and backfill |
+| | [CLASSIFICATION](docs/CLASSIFICATION.md) — the ensemble and the verdict taxonomy |
+| | [THREAT-MODEL](docs/THREAT-MODEL.md) — scope, non-scope, acknowledged trade-offs |
+| | [TRUST-TIERS](docs/TRUST-TIERS.md) — authority derived from Discord permission bits |
+| | [COMMANDS](docs/COMMANDS.md) — the command surface by required tier |
+| | [CONFIGURATION](docs/CONFIGURATION.md) — operator-tunable behaviour |
+| | [GOVERNANCE](docs/GOVERNANCE.md) — dated, attributed, forward-only policy changes |
+| | [PRIVACY](docs/PRIVACY.md) — what is retained, and who can reach it |
+| | [SCANNER](docs/SCANNER.md) — the companion security scanner |
+| | [RESEARCH-GATEWAY](docs/RESEARCH-GATEWAY.md) — the corpus and research API |
 
 ---
 
 ## ON THIS REPOSITORY
-**This is a technical specification, not a deployable implementation.**
-That is deliberate, and for a moderation system it is also a security requirement.
-Documentation of a detector is a manual for evading it, so this repository
-**publishes the architecture and withholds the calibration**:
-
-- every threshold, limit, window and confidence cut-off is described by its
-  *purpose*, never its value
-- the deterministic backstop's trigger patterns are described by their *role*,
-  never enumerated
-- classifier prompts are not published
-- all examples are synthetic
-You can see exactly how it is built and why it works. You cannot derive the numbers
-you would need to slip past it. Both of those are on purpose.
+**This is a technical specification, not a deployable implementation** — and for a
+detector that is a security requirement rather than a convenience.
+Documentation of a detector is a manual for evading it. So this repository
+**publishes the architecture and withholds the calibration**: no thresholds, limits,
+confidence floors, windows, model identifiers, guard patterns, prompts or scheduled
+cadences. No real identifiers of any kind. Every example is synthetic.
+You can judge exactly how it is built and why it works. You cannot derive what you
+would need to slip past it.
 
 ## LICENSE
 See [LICENSE](LICENSE).

@@ -54,3 +54,4 @@ were actioned, the answer should be a dated policy and a retained confidence sco
 > A thing asserted is not a thing checked.
 An enforcement claim is only as good as the record behind it. Governance is what
 makes the record answer questions after the fact instead of merely existing.
+

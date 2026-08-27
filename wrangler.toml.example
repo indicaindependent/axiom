@@ -1,31 +1,29 @@
-# AXIOM — configuration SHAPE
+# AXIOM — configuration SHAPE for all three services
 #
-# Binding NAMES are the useful part of a specification and are published here.
-# Every IDENTIFIER is a placeholder. A wrangler.toml with real ids is a
+# Binding NAMES are the useful part of a specification and are published.
+# Every IDENTIFIER is a placeholder. A wrangler.toml carrying real ids is a
 # reconnaissance document even when it contains no secrets.
-#
-# Copy to wrangler.toml and supply your own values.
 
-name = "axiom"
-main = "src/worker.js"
+# ============================================================================
+# 1. MODERATION ENGINE
+# ============================================================================
+name = "axiom-engine"
+main = "src/engine.js"
 compatibility_date = "<YYYY-MM-DD>"
 account_id = "<CF_ACCOUNT_ID>"
+workers_dev = false        # deliberate: no bypass route past the real hostname
 
-# ── Scheduled work ───────────────────────────────────────────────────────────
-# Cadence intentionally omitted. An adversary who knows when a sweep runs knows
-# when coverage is thinnest. Choose your own interval.
+# Scheduled sweep. Cadence omitted — knowing when coverage is thinnest is
+# actionable. See docs/ARCHITECTURE.md.
 [triggers]
 crons = ["<YOUR_CRON_EXPRESSION>"]
 
-# ── Inference ────────────────────────────────────────────────────────────────
 [ai]
-binding = "AI"
+binding = "AI"             # text + vision ensemble; model ids are configuration
 
-# ── Databases ────────────────────────────────────────────────────────────────
-# NOTE: both databases may contain a table of the same name with different
-# schemas. See docs/ARCHITECTURE.md — querying the wrong one returns success
-# with an empty result, which is indistinguishable from "nothing ever happened".
-
+# NOTE: both databases may hold a table of the SAME NAME with different schemas.
+# Querying the wrong one returns success with an empty result, which is
+# indistinguishable from "nothing ever happened". See docs/ARCHITECTURE.md.
 [[d1_databases]]
 binding       = "BOT_DB"           # guild-local state
 database_name = "<BOT_DB_NAME>"
@@ -36,26 +34,63 @@ binding       = "VM_DB"            # the moderation record
 database_name = "<VM_DB_NAME>"
 database_id   = "<D1_DATABASE_ID>"
 
-# ── Sessions ─────────────────────────────────────────────────────────────────
 [[kv_namespaces]]
 binding = "SESSIONS"
 id      = "<KV_NAMESPACE_ID>"
 
-# ── Secrets ──────────────────────────────────────────────────────────────────
-# Set with `wrangler secret put NAME`. Never commit values.
+# Secrets — set with `wrangler secret put NAME`, never committed.
+#   DISCORD_TOKEN · DISCORD_APP_ID · DISCORD_PUBLIC_KEY
+#   INTERNAL_SECRET        authenticates the resident listener's /moderate calls
+#   SCANNER_KEY            authenticates scanner invocation
+#   OWNER_ID               owner-tier identity
+#   ALERT_* (2)            out-of-band operator alerting
+#   SMOKE_TOKEN            gates the smoke-test surface
 #
-#   DISCORD_TOKEN          bot token
-#   DISCORD_APP_ID         application id
-#   DISCORD_PUBLIC_KEY     interaction signature verification
-#   AXIOM_SECRET           internal request authentication
-#   SCANNER_KEY            companion scanner authentication
-#   OWNER_ID               owner tier identity
-#   ALERT_CHAT_ID          out-of-band operator alerting
-#   ALERT_BOT_TOKEN        out-of-band operator alerting
+# Deployment-specific secrets are omitted. A secret NAME paired with its purpose
+# discloses what a system integrates with.
 #
-# Additional deployment-specific secrets are omitted: a secret NAME paired with
-# its purpose discloses what a system integrates with.
+# Guild id, channel ids and administrator ids are configuration, NOT literals.
+# Never commit them, and never leave them as plain_text vars in a public example.
 
-# ── Configuration ────────────────────────────────────────────────────────────
-# Runtime moderation behaviour is configured in the database, not here, so it is
-# tunable without a redeploy. See docs/CONFIGURATION.md for the key surface.
+# ============================================================================
+# 2. RESEARCH GATEWAY            (separate deployment)
+# ============================================================================
+# name = "axiom-research"
+# workers_dev = false
+#
+# [[r2_buckets]]
+# binding     = "CORPUS"
+# bucket_name = "<R2_BUCKET_NAME>"
+#
+# [[d1_databases]]
+# binding       = "RESEARCH_DB"
+# database_id   = "<D1_DATABASE_ID>"
+#
+# [vars]
+# SCANNER_URL          = "<PRIMARY_SCANNER_URL>"
+# SCANNER_FALLBACK_URL = "<FALLBACK_SCANNER_URL>"   # failover is designed
+#
+# Secrets: one key PER CONSUMER, independently revocable. Key names are omitted
+# because a key named after its consumer discloses which systems exist.
+
+# ============================================================================
+# 3. SECURITY SCANNER            (separate deployment)
+# ============================================================================
+# name = "axiom-scanner"
+# workers_dev = false
+# Secrets: SCANNER_KEY only. Read-only by design — no database, no storage.
+
+# ============================================================================
+# RESIDENT GATEWAY LISTENER — not a Worker
+# ============================================================================
+# Runs under systemd on operator hardware, because a Worker cannot hold a
+# resumable websocket across cold starts. Pure websockets + HTTP client, no
+# Discord library, so it is portable to a container runtime.
+#
+# Environment (file mode 600, never committed):
+#   DISCORD_TOKEN · INTERNAL_SECRET · ENGINE_BASE_URL
+#   GUILD_ID · WATCH_CHANNELS
+#
+# It refuses to start if credentials are absent rather than running degraded.
+# Its supervision is an EXTERNAL black-box check — see docs/FAILURE-MODES.md.
+
