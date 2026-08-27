@@ -1,7 +1,6 @@
 # CONFIGURATION
 Axiom's behaviour is operator-tunable **without a redeploy**. Roughly twenty
 configuration keys govern the moderation surface.
-
 **Values, defaults and ranges are deliberately absent from this document.** A
 published threshold is a published evasion budget. What follows is the shape of the
 control surface and what each key affects.
@@ -38,7 +37,6 @@ posture in a different server without modification.
 | `MOD_CLASSIFIER_FALLBACK` | used when the primary is unavailable |
 | `MOD_VISION_MODEL` | primary image classifier |
 | `MOD_VISION_FALLBACK` | used when the vision primary is unavailable |
-
 Changing a model changes behaviour **with no code diff**. This is the reason
 [GOVERNANCE](GOVERNANCE.md) exists: a configuration change that alters enforcement
 must leave a record, or the system's behaviour drifts untraceably.
@@ -65,3 +63,4 @@ problem, not a sensitivity problem, and narrowing scope has no false-positive co
 **Change one key at a time.** With graduated verdicts and conjunction gating,
 simultaneous changes produce effects that cannot be attributed afterward.
 **Record every change.** See [GOVERNANCE](GOVERNANCE.md).
+

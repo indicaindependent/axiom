@@ -1,5 +1,4 @@
 # THREAT MODEL
-
 What Axiom is built to stop, and what it does not attempt.
 
 ## IN SCOPE
@@ -17,7 +16,6 @@ What Axiom is built to stop, and what it does not attempt.
 | **Moderator error and disputes** | every action writes evidence including the model, confidence and reasoning, so a decision can be reviewed rather than argued about |
 
 ## OUT OF SCOPE
-
 Stated plainly, because a tool that implies total coverage is worse than one that
 names its edges.
 
@@ -49,26 +47,22 @@ names its edges.
   [FALSE-POSITIVES](FALSE-POSITIVES.md).
 
 ## ACKNOWLEDGED TRADE-OFFS
-
 Two design tensions are worth naming, because they are choices rather than
 oversights.
-
 **Accuracy versus availability.** The fallback layers exist so that coverage
 degrades rather than disappearing during an inference outage. A simpler layer is by
 definition a blunter one. The alternative — no coverage at all when a model is
 unreachable — was judged worse.
-
 **Sensitivity versus trust.** A moderation system that frequently flags legitimate
 conversation loses the community's cooperation, and a system the community works
 around is not protecting it. Calibration reflects that, which is why
 [FALSE-POSITIVES](FALSE-POSITIVES.md) is the longest document here.
 
 ## WHAT IS NOT PUBLISHED
-
 Detection calibration is deliberately absent throughout: thresholds, limits,
 confidence cut-offs, backstop patterns, classifier prompts, scheduled timings, and
 the specific evaluation differences between trust tiers.
-
 **Documentation of a detector is a manual for evading it.** The architecture is
 published so the design can be judged. The calibration is withheld so it cannot be
 worked around. Requests for specific values will be declined.
+

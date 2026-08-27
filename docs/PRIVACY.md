@@ -1,5 +1,4 @@
 # PRIVACY
-
 Axiom reads messages in the channels it is scoped to. That is a meaningful thing for
 software to do, so this document states what the system retains and who can reach it.
 
@@ -14,7 +13,6 @@ software to do, so this document states what the system retains and who can reac
 | Member records | standing, tier, accumulated infractions |
 | Strike ladders | separate per category, so promotional and abuse records do not merge |
 | Moderator actions | who acted, against whom, and why |
-
 **Human moderator actions are retained on the same terms as automated ones.** The
 audit trail is not one-directional.
 
@@ -26,11 +24,9 @@ audit trail is not one-directional.
   because something was evaluated, not because everything is archived
 
 ## WHY EXCERPTS ARE KEPT AT ALL
-
 An enforcement decision that cannot be reviewed cannot be appealed or corrected.
 Discarding the excerpt would make every past action unfalsifiable, which protects the
 system from scrutiny rather than protecting the member.
-
 The trade-off is explicit: a small amount of retained content, in exchange for
 decisions that can be checked.
 
@@ -42,12 +38,10 @@ decisions that can be checked.
 | Infraction records | moderator tier and above |
 | Full evidence records | owner and co-admin |
 | Operator log | whoever can read the configured log channel |
-
 Investigative commands are **ephemeral**, so a lookup is not itself broadcast to the
 channel.
 
 ## NOTES FOR OPERATORS
-
 Axiom is a tool, and deployment decisions belong to whoever runs it. Points worth
 considering when configuring an instance:
 
@@ -62,9 +56,8 @@ considering when configuring an instance:
   kept. Those are operator decisions.
 
 ## WHAT THIS REPOSITORY CONTAINS
-
 No real message content, usernames, member identifiers, guild identifiers or evidence
 excerpts appear anywhere in this repository. Every example is synthetic.
-
 Retention windows and evidence-scope values are not published, for the same reason
 thresholds are not.
+

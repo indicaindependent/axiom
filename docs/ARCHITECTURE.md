@@ -1,93 +1,115 @@
 # ARCHITECTURE
 
-## COMPONENTS
-Axiom is three cooperating pieces, deliberately split across two failure domains.
+## THREE SERVICES AND A RESIDENT PROCESS
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/components-dark.svg">
-  <img src="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/components-light.svg" alt="Components and failure domains: the Discord gateway websocket feeds a gateway listener, a resident process on operator-controlled hardware forming failure domain A, which feeds a Cloudflare Worker forming failure domain B. The worker handles interaction handling, classification, enforcement and a scheduled sweep, and writes to two D1 databases, BOT_DB holding guild-local state and VM_DB holding the moderation record. The two domains fail independently." width="100%">
+  <img src="https://raw.githubusercontent.com/indicaindependent/axiom/main/assets/diagrams/components-light.svg" alt="Components and failure domains: the Discord gateway websocket feeds a resident gateway listener on operator hardware forming failure domain A, which feeds a Cloudflare Worker forming failure domain B. The worker classifies, enforces and sweeps, writing to two D1 databases, BOT_DB for guild-local state and VM_DB for the moderation record. The domains fail independently." width="100%">
 </picture>
 
 <details>
 <summary>Same diagram as plain text</summary>
 
 ```
-  Discord Gateway (websocket, persistent session)
-            |
-            v
-   +--------------------+        resident process, operator-controlled hardware
-   |  GATEWAY LISTENER  |        holds the live session, survives worker cold starts
-   +--------------------+
-            |
-            v
-   +--------------------+        Cloudflare Worker
-   |   MODERATION       |        interaction handling, classification, enforcement
-   |   WORKER           |        scheduled sweep on a recurring trigger
-   +--------------------+
-        |          |
-        v          v
-   +---------+  +---------+
-   | BOT_DB  |  |  VM_DB  |     two D1 databases, different lifecycles
-   +---------+  +---------+
+Discord Gateway  (websocket, resumable session)
+                              |
+                              v
+                   +----------------------+   operator hardware, systemd-supervised
+                   |   GATEWAY LISTENER   |   holds the live session
+                   |   "dumb plumbing"    |   never acts, never stores
+                   +----------------------+
+                              |  POST /moderate
+                              v
+   +--------------------------------------------------+
+   |            MODERATION ENGINE (worker)            |
+   |  interactions · classification · enforcement     |
+   |  scheduled sweep · backfill · evidence           |
+   +--------------------------------------------------+
+        |                |                     |
+        v                v                     v
+   +---------+      +---------+        +------------------+
+   | BOT_DB  |      |  VM_DB  |        |  RESEARCH        |
+   | guild   |      |  the    |        |  GATEWAY (worker)|
+   | state   |      |  record |        |  corpus + API    |
+   +---------+      +---------+        +------------------+
+                                              |
+                                              v
+                                    +------------------+
+                                    | SECURITY SCANNER |
+                                    | (worker, r/o)    |
+                                    +------------------+
 ```
 
 </details>
 
-### Why the listener is not in the worker
-A Cloudflare Worker cannot hold a long-lived websocket across cold starts. Discord's
-gateway expects a persistent, resumable session with heartbeats and sequence
-tracking. So the listener runs as a resident process on operator hardware and the
-worker handles everything request-shaped.
-This split has a second benefit that matters more than the first: **the two halves
-fail independently.** A worker deploy does not drop the gateway session, and a
-gateway reconnect does not interrupt interaction handling.
+| Service | Role | Relative size |
+| :--- | :--- | :--- |
+| Moderation engine | classification, enforcement, evidence, commands | ~92% of the codebase |
+| Research gateway | authenticated corpus and research API, scanner routing | ~7% |
+| Security scanner | read-only web-security audit | ~1% |
 
-### Why there are two databases
+## WHY THE LISTENER IS NOT IN THE WORKER
+A Worker cannot hold a long-lived websocket across cold starts, and Discord's gateway
+expects a persistent, resumable session with heartbeats and sequence tracking. So the
+listener is a resident process and the worker handles everything request-shaped.
+The split has a second benefit that matters more than the first: **the two halves fail
+independently.** A worker deploy does not drop the gateway session, and a gateway
+reconnect does not interrupt interaction handling.
+
+### Design notes on the listener, from its own source
+
+- **No Discord library.** Pure websockets plus an HTTP client, deliberately, so the
+  process is portable to a container runtime later. Portability designed in, not
+  discovered.
+- **Never acts, never stores.** It forwards and nothing else. All judgement lives in the
+  engine, so there is exactly one place where policy is decided.
+- **Refuses to start without credentials** rather than running degraded. A process that
+  starts and silently does nothing is the worst available outcome.
+- **Auto-reconnect with resume and backoff**, so a network blip does not lose the
+  session or hammer the gateway.
+Its supervision is covered in [FAILURE-MODES](FAILURE-MODES.md) — the first failure in
+that document is about the supervisor, not the listener.
+
+## WHY THERE ARE TWO DATABASES
 
 | Binding | Holds | Lifecycle |
 | :--- | :--- | :--- |
-| `BOT_DB` | guild-local state: members, rate limits, security tiers, legacy records | per-bot, long-lived |
-| `VM_DB` | the moderation record: decisions, evidence, strike ladders, per-guild config | shared with the wider platform |
+| `BOT_DB` | guild-local state: members, rate limits, trust tiers, legacy records | per-bot |
+| `VM_DB` | the moderation record: decisions, evidence, strike ladders, per-guild config, harvest queue | shared with the wider platform |
+**This split is a documented trap, published because it cost real time.** Both
+databases contain a table named `mod_log`. One holds a legacy manual-moderation shape;
+the other holds the current automated record.
+Querying the wrong one returns a well-formed, plausible, **empty** result rather than an
+error — which reads exactly like "this system has never acted." An audit that checked
+only the first database concluded the moderation pipeline had never run, while it was
+actively enforcing.
+**An absence is only evidence once you have confirmed you asked the right store.**
 
-**This split is a documented trap.** Both databases contain a table named
-`mod_log`. `BOT_DB` holds a legacy manual-moderation shape; `VM_DB` holds the
-current automated record. Reading the wrong one returns a well-formed, plausible,
-**empty-looking** answer rather than an error — which reads exactly like "the system
-has never acted."
-Anyone auditing this system must confirm which binding they queried before drawing
-a conclusion from an absence. An empty result from the wrong store is
-indistinguishable from a real one.
+## SCHEDULED AND OUT-OF-BAND WORK
 
-## DATA FLOW — A MESSAGE
+| Job | Where | Purpose |
+| :--- | :--- | :--- |
+| Engine sweep | worker, recurring | periodic evaluation and reporting |
+| Retry queue | operator hardware | re-judge anything an outage left unjudged |
+| Liveness check | operator hardware | external black-box supervision of the listener |
+| Backfill drivers | operator hardware | batch re-judge history in bounded phases |
+Two jobs run on operator hardware rather than in the worker, for the same reason in both
+cases: **a worker-side job cannot run when the worker is the thing that is broken.**
+Cadences and offsets are intentionally omitted throughout. An adversary who knows
+when coverage is thinnest knows when to post.
 
-```
-message arrives on the gateway
-  -> tier lookup            is the author exempt from evaluation?
-  -> channel scope check    is this channel in moderated scope?
-  -> classification         layer 1, falling through 2 and 3 as needed
-  -> verdict assignment     graduated, never binary (see CLASSIFICATION)
-  -> backstop reconciliation deterministic rules can RAISE a verdict, never lower it
-  -> action selection       ephemeral nudge / warn / timeout / escalate / none
-  -> ladder update          the appropriate strike ladder, by category
-  -> evidence write         decision, reasoning, model, confidence, excerpt
-  -> operator log           to the configured log channel
-```
-Two properties are load-bearing:
-**The backstop can only escalate.** A deterministic rule may raise a verdict that
-the model scored too low. It may never clear a verdict the model raised. Failure is
-biased toward action, not silence.
-**Evidence is written before the operator sees anything.** If the log write fails,
-the record still exists. A notification is not a record.
+## ISOLATION POSTURE
 
-## SCHEDULED WORK
-The worker runs a recurring scheduled handler for sweeps and periodic reporting. A
-separate out-of-band job on operator hardware handles retry of anything the
-classifier could not evaluate during an outage.
-
-Cron cadences and offsets are intentionally omitted from this document. An
-adversary who knows when coverage is thinnest knows when to post.
+- All three workers have their **public platform subdomain disabled**. Traffic arrives
+  only through the operator's own hostname, so there is no bypass route to a service
+  that skips the intended entry point.
+- The engine holds a **guild allowlist** and will not operate in a server it was not
+  authorised for, independent of whether it was invited.
+- The research gateway authenticates **per consumer**, so a compromised consumer key
+  does not become general access.
 
 ## BINDINGS
-See [`wrangler.toml.example`](../wrangler.toml.example) for the binding shape.
-Names are published because they are the useful part of a specification.
-Identifiers are placeholdered because they are not.
+See [`wrangler.toml.example`](../wrangler.toml.example) for the shape. Names are
+published because they are the useful part of a specification. Identifiers are
+placeholdered because they are not.
+
