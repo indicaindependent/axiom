@@ -81,8 +81,8 @@ cannot hold a resumable websocket across cold starts. Its own description of its
 
 | | Document |
 | :--- | :--- |
-|  | [FALSE-POSITIVES](docs/FALSE-POSITIVES.md) — the guard suite, and why single-signal matching fails |
-|  | [FAILURE-MODES](docs/FAILURE-MODES.md) — two real failures, published in full |
+| | [FALSE-POSITIVES](docs/FALSE-POSITIVES.md) — the guard suite, and why single-signal matching fails |
+| | [FAILURE-MODES](docs/FAILURE-MODES.md) — two real failures, published in full |
 | | [ARCHITECTURE](docs/ARCHITECTURE.md) — components, data flow, the two-database split |
 | | [PIPELINE](docs/PIPELINE.md) — harvest, judge, evidence, act — and backfill |
 | | [CLASSIFICATION](docs/CLASSIFICATION.md) — the ensemble and the verdict taxonomy |
