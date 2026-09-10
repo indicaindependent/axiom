@@ -41,8 +41,7 @@ immediately. Same vocabulary, different structure — and the structure is the s
 The reported-speech distinction is one that human moderation teams routinely get
 wrong. See [FALSE-POSITIVES](docs/FALSE-POSITIVES.md).
 
-### Bounded enforcement, and a queue that reports its own health
-
+### BOUNDED ENFORCEMENT, AND A QUEUE THAT REPORTS ITSELF
 - **Bounded enforcement for three solicitation species in the general channel** —
   recruiting-with-DM-funnel, off-platform commercial adverts, and begging — via a
   three-rung ladder that never bans ([ENFORCEMENT-LADDER](docs/ENFORCEMENT-LADDER.md)).
@@ -96,6 +95,8 @@ cannot hold a resumable websocket across cold starts. Its own description of its
 | :--- | :--- |
 | | [FALSE-POSITIVES](docs/FALSE-POSITIVES.md) — the guard suite, and why single-signal matching fails |
 | | [FAILURE-MODES](docs/FAILURE-MODES.md) — two real failures, published in full |
+| | [ENFORCEMENT-LADDER](docs/ENFORCEMENT-LADDER.md) — the one documented exception to escalate-only |
+| | [OPERATIONS](docs/OPERATIONS.md) — the scheduled tick, the wipe queue, and its self-checks |
 | | [ARCHITECTURE](docs/ARCHITECTURE.md) — components, data flow, the two-database split |
 | | [PIPELINE](docs/PIPELINE.md) — harvest, judge, evidence, act — and backfill |
 | | [CLASSIFICATION](docs/CLASSIFICATION.md) — the ensemble and the verdict taxonomy |
@@ -107,8 +108,6 @@ cannot hold a resumable websocket across cold starts. Its own description of its
 | | [PRIVACY](docs/PRIVACY.md) — what is retained, and who can reach it |
 | | [SCANNER](docs/SCANNER.md) — the companion security scanner |
 | | [RESEARCH-GATEWAY](docs/RESEARCH-GATEWAY.md) — the corpus and research API |
-| | [ENFORCEMENT-LADDER](docs/ENFORCEMENT-LADDER.md) — the one documented exception to escalate-only |
-| | [OPERATIONS](docs/OPERATIONS.md) — the scheduled tick, queues, tripwires and logging |
 
 ---
 
@@ -122,9 +121,9 @@ cadences. No real identifiers of any kind. Every example is synthetic.
 You can judge exactly how it is built and why it works. You cannot derive what you
 would need to slip past it.
 
+## CHANGELOG
+Dated, mechanism-level entries for every behaviour change — see
+[CHANGELOG](CHANGELOG.md).
+
 ## LICENSE
 See [LICENSE](LICENSE).
-
----
-
-Change history: [CHANGELOG](CHANGELOG.md) — dated, mechanism-level entries.
