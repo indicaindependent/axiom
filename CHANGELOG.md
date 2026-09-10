@@ -41,8 +41,9 @@ on the reference deployment. Entries describe mechanisms, never tuning values.
 - **Structured logging enabled** on the reference deployment. Before this the worker had
   no persisted logs at all, which is why a day-long stall was invisible. The scheduled tick
   now logs one line per stage with counts.
-- **Redirect ladder for two deterministic solicitation species in the general channel** —
-  recruiting-plus-DM-funnel and off-platform commercial adverts. First offence: archive,
+- **Redirect ladder for three deterministic solicitation species in the general channel** —
+  recruiting-plus-DM-funnel, off-platform commercial adverts, and begging (personal money,
+  gift or purchase requests aimed at members). First offence: archive,
   delete, private redirect note, no strike. Second: the same plus a short timeout. Third
   and beyond: a longer timeout and an operator ping for the ban decision. Staff exempt;
   general channel only; fails closed on the locker. This is the operator's explicit,
@@ -52,8 +53,8 @@ on the reference deployment. Entries describe mechanisms, never tuning values.
   then, later, "let's talk in DM") evades any single-message rule. When one message
   carries only a partial signal, the author's recent messages in the channel are joined
   and re-detected; on a hit every joined message is archived, then deleted, as one offence.
-- **Begging species** (personal money, gift or purchase requests aimed at members).
-  Requires two independent signals — an *ask* phrase **and** a money-or-channel term — so
+- **Begging species** — the third species on the ladder above (personal money, gift or
+  purchase requests aimed at members). Requires two independent signals — an *ask* phrase **and** a money-or-channel term — so
   builder talk that shares vocabulary ("anyone feeling generous with code review?",
   "I can't afford the pro plan so I use the free tier") does not trigger it.
 - **Weekly dry replay.** Once a week the deterministic detectors are re-run over the
