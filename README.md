@@ -41,6 +41,19 @@ immediately. Same vocabulary, different structure — and the structure is the s
 The reported-speech distinction is one that human moderation teams routinely get
 wrong. See [FALSE-POSITIVES](docs/FALSE-POSITIVES.md).
 
+### Bounded enforcement, and a queue that reports its own health
+
+- **Bounded enforcement for three solicitation species in the general channel** —
+  recruiting-with-DM-funnel, off-platform commercial adverts, and begging — via a
+  three-rung ladder that never bans ([ENFORCEMENT-LADDER](docs/ENFORCEMENT-LADDER.md)).
+  Everything else stays escalate-only.
+- **A queue that tells you when it is stuck.** Approved wipes run through an
+  evidence-locker-first queue with a lease lock and an age tripwire that notifies the
+  operator once per stall ([OPERATIONS](docs/OPERATIONS.md)).
+- **A weekly dry replay** that re-runs the deterministic detectors over the week's
+  un-actioned messages and reports what would fire — so a detector silenced by a
+  downstream guard cannot stay silent for long.
+
 ## 2. IT ASSUMES ITS OWN AI WILL FAIL
 
 <picture>
@@ -94,6 +107,8 @@ cannot hold a resumable websocket across cold starts. Its own description of its
 | | [PRIVACY](docs/PRIVACY.md) — what is retained, and who can reach it |
 | | [SCANNER](docs/SCANNER.md) — the companion security scanner |
 | | [RESEARCH-GATEWAY](docs/RESEARCH-GATEWAY.md) — the corpus and research API |
+| | [ENFORCEMENT-LADDER](docs/ENFORCEMENT-LADDER.md) — the one documented exception to escalate-only |
+| | [OPERATIONS](docs/OPERATIONS.md) — the scheduled tick, queues, tripwires and logging |
 
 ---
 
@@ -109,3 +124,7 @@ would need to slip past it.
 
 ## LICENSE
 See [LICENSE](LICENSE).
+
+---
+
+Change history: [CHANGELOG](CHANGELOG.md) — dated, mechanism-level entries.
