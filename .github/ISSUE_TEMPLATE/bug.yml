@@ -1,0 +1,39 @@
+name: Bug
+description: Something that does not work as documented.
+title: "[Bug] "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Public lane. If the bug lets someone get past Axiom, report it privately as a security
+        advisory instead (see SECURITY.md).
+  - type: textarea
+    id: expected
+    attributes:
+      label: What should happen
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to see it
+      description: Steps or circumstances. Describe, do not paste personal details.
+  - type: input
+    id: when
+    attributes:
+      label: When it happened
+      description: Date and time with timezone, if you know it.
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before you submit
+      options:
+        - label: This contains no member messages, usernames, IDs or personal details.
+          required: true

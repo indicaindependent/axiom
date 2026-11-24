@@ -1,0 +1,48 @@
+name: False positive
+description: Axiom acted on a message that was legitimate.
+title: "[False positive] "
+labels: ["false-positive", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. A confirmed false positive becomes a permanent test case, so these reports
+        directly improve Axiom. Describe the message, do not paste it, and leave out anyone's
+        name or ID.
+  - type: textarea
+    id: what
+    attributes:
+      label: What the message was about
+      description: For example, "a question about API pricing" or "quoting a scam DM in order to report it".
+    validations:
+      required: true
+  - type: dropdown
+    id: action
+    attributes:
+      label: What Axiom did
+      options:
+        - Removed the message
+        - Sent a private note
+        - Timed someone out
+        - Escalated to moderators
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it was legitimate
+    validations:
+      required: true
+  - type: input
+    id: when
+    attributes:
+      label: When it happened
+      description: Date and time with timezone, if you know it.
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before you submit
+      options:
+        - label: This contains no member messages, usernames, IDs or personal details.
+          required: true

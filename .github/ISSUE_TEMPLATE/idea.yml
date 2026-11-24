@@ -1,0 +1,44 @@
+name: Idea
+description: Something Axiom should do, or do differently.
+title: "[Idea] "
+labels: ["idea", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Public lane. Anything about getting past Axiom's detection, or about its tuning, belongs in a
+        private security advisory instead (see SECURITY.md). Describe, do not paste: no member
+        messages, usernames, IDs or personal details.
+  - type: textarea
+    id: now
+    attributes:
+      label: What happens now
+      description: What Axiom does today, as far as you can tell.
+    validations:
+      required: true
+  - type: textarea
+    id: want
+    attributes:
+      label: What you would like instead
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Who it helps, and why it matters
+    validations:
+      required: true
+  - type: textarea
+    id: risk
+    attributes:
+      label: Who could be wrongly affected
+      description: Could this catch legitimate members or conversations? Your best guess is fine.
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Before you submit
+      options:
+        - label: This contains no member messages, usernames, IDs or personal details.
+          required: true
+        - label: This does not describe a way around Axiom's detection.
+          required: true
